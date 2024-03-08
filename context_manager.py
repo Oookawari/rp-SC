@@ -13,13 +13,13 @@ import numpy as np
 import pickle
 from bs4 import BeautifulSoup
 from tqdm import tqdm
-from transformers import GPT2Tokenizer
+from transformers import GPT2Tokenizer, GPT2LMHeadModel
 import time
 import spacy
 from datasets import load_dataset
 from filelock import FileLock
 import traceback
-
+import torch
 
 @dataclass
 class LexicalUnits:
@@ -676,34 +676,41 @@ class NewsContextManager(ArxivContextManager):
         context = re.sub(r"\s+", " ", context)
         return context
 
-def get_self_information(text, num_retry = 5):
+self_information_tokenizer = None
+
+self_information_device = None
+
+self_information_model = None
+
+def get_self_information(text, num_retry = 5): 
+    global self_information_tokenizer
+    global self_device
+    global self_model
+    
+    if self_information_tokenizer is None:
+        self_information_tokenizer = GPT2Tokenizer.from_pretrained('gpt2')
+    if self_information_device is None:
+        self_information_device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    if self_information_model is None:
+        self_information_model = GPT2LMHeadModel.from_pretrained('gpt2')
+        self_information_model.to(self_device)
+        self_information_model.eval()
+        print('gpt2: model loaded')
     # text = text[:1000]
-    openai.api_key = os.environ["OPENAI_API_KEY"]
+    text = f"<|endoftext|>{text}"
+    with torch.no_grad():
+        encoding = self_information_tokenizer(text, add_special_tokens=False, return_tensors='pt')
+        encoding = encoding.to(self_information_device)
+        outputs = self_information_model(**encoding)
+        logits = outputs.logits
+        probs = torch.softmax(logits, dim=-1)
+        self_info = -torch.log(probs)
+        
+    input_ids = encoding['input_ids']
+    input_ids_expaned = input_ids[:, 1:].unsqueeze(-1)
 
-    for _ in range(num_retry):
-        try:
-            r = openai.Completion.create(
-                model="curie",
-                prompt=f"<|endoftext|>{text}",
-                max_tokens=0,
-                temperature=0,
-                echo=True,
-                logprobs=0,
-            )
-            break
-        except Exception as e:
-            print(e)
-            time.sleep(1)
-
-    result = r['choices'][0]
-    tokens, logprobs = result["logprobs"]["tokens"][1:], result["logprobs"]["token_logprobs"][1:]
-
-    assert len(tokens) == len(logprobs), f"Expected {len(tokens)} logprobs, got {len(logprobs)}"
-
-    self_info = [ -logprob for logprob in logprobs]
-    # TODO: deal with the first delimiter
-    return tokens, self_info
-
+    tokens = [self_information_tokenizer.decode(token_) for token_ in input_ids.squeeze().tolist()[1:]]
+    return tokens, self_info[:, :-1].gather(-1, input_ids_expaned).squeeze(-1).squeeze(0).tolist()
 
 if __name__ == "__main__":
     context_path, = sys.argv[1:]
