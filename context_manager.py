@@ -684,8 +684,8 @@ self_information_model = None
 
 def get_self_information(text, num_retry = 5): 
     global self_information_tokenizer
-    global self_device
-    global self_model
+    global self_information_device
+    global self_information_model
     
     if self_information_tokenizer is None:
         self_information_tokenizer = GPT2Tokenizer.from_pretrained('gpt2')
@@ -693,7 +693,7 @@ def get_self_information(text, num_retry = 5):
         self_information_device = 'cuda' if torch.cuda.is_available() else 'cpu'
     if self_information_model is None:
         self_information_model = GPT2LMHeadModel.from_pretrained('gpt2')
-        self_information_model.to(self_device)
+        self_information_model.to(self_information_device)
         self_information_model.eval()
         print('gpt2: model loaded')
     # text = text[:1000]
