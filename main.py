@@ -20,6 +20,7 @@ def display_performance(context: ContextAndAnswer):
 
 def main():
     arxiv_path, news_path, conversation_path, save_to_path, num_articles, model_name = sys.argv[1:]
+    task_name = "qa"
     logging.basicConfig(level=logging.INFO, filename=os.path.join(save_to_path, f'log_{model_name}.txt'), filemode='w', format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     logging.info(f'arxiv_path: {arxiv_path}, news_path: {news_path}, conversation_path: {conversation_path}, save_to_path: {save_to_path}, num_articles: {num_articles}, model_name: {model_name}, task_name: {task_name}')
     num_articles = int(num_articles)
