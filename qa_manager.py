@@ -77,7 +77,7 @@ class TaskManager:
             size = self.model_type.split('-')[-1]
             assert size in ['7b', '13b', '30b']
             bs = {
-                '7b': 12,
+                '7b': 6,
                 '13b': 6,
                 '30b': 3,
             }
@@ -111,7 +111,7 @@ class TaskManager:
             model = LlamaForCausalLM.from_pretrained(base_model, torch_dtype=torch.float16, device_map='auto')
             model = PeftModel.from_pretrained(model,  torch_dtype=torch.float16)
             model.eval()
-            self.batch_size = 12
+            self.batch_size = 6
 
             self.model = model
             self.tokenizer = tokenizer
@@ -131,10 +131,10 @@ class TaskManager:
             model = T5ForConditionalGeneration.from_pretrained("google/flan-t5-xxl", torch_dtype=torch.float16, device_map="auto")
             model.eval()
             bs = {
-                'flan-t5-xxl': 6,
-                'flan-t5-base': 12,
-                'flan-t5-large': 12,
-                'flan-t5-xl': 12,
+                'flan-t5-xxl': 3,
+                'flan-t5-base': 6,
+                'flan-t5-large': 6,
+                'flan-t5-xl': 3,
             }
             self.batch_size = bs[self.model_type]
 
@@ -153,7 +153,7 @@ class TaskManager:
             self.model_instruct_tuned = True
             size = self.model_type.split('-')[-1]
             assert size in ['7B', '13B']
-            self.batch_size = 6 if size == '13B' else 12
+            self.batch_size = 3 if size == '13B' else 6
             self.model = LlamaForCausalLM.from_pretrained(f"TheBloke/vicuna-{size}-1.1-HF", torch_dtype=torch.float16, device_map='auto')
             self.tokenizer = LlamaTokenizerFast.from_pretrained(f"huggyllama/llama-{size}".lower())
             self.model.eval()
