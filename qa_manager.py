@@ -194,7 +194,15 @@ class TaskManager:
                 generation_config = None
             self.generator = pipeline('text-generation', model=self.model, tokenizer=self.tokenizer, generation_config=generation_config)
         print('Batched generation started. num_prompts:', len(prompts), ', batch_size:', self.batch_size, ', self.model.device:', self.model.device, ', pipeline.device:', self.generator.device)
+        
+        print("before pipeline")
+        print("mem allocated in MB:",torch.cuda.memory_allocated()/1024**2)
+        print("max mem allocated in MB",torch.cuda.max_memory_allocated()/1024**2)
+
         outputs = self.generator(prompts, max_new_tokens=450, batch_size = self.batch_size, return_full_text=False)
+        print("after pipeline")
+        print("mem allocated in MB:",torch.cuda.memory_allocated()/1024**2)
+        print("max mem allocated in MB",torch.cuda.max_memory_allocated()/1024**2)
         print(outputs)
         return [output[0]['generated_text'] for output in outputs]
     
